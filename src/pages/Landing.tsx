@@ -39,9 +39,9 @@ export default function Landing() {
             </div>
             <span className="text-xl font-bold text-white">OnboardWise</span>
           </div>
-          <Link to="/app">
+          <Link to="/auth">
             <Button variant="outline" className="bg-white text-primary hover:bg-gray-50">
-              Go to App
+              Sign In
             </Button>
           </Link>
         </div>
@@ -136,7 +136,7 @@ export default function Landing() {
           <p className="text-xl text-blue-100 mb-8">
             Start with our free tier and see the difference gamified training makes.
           </p>
-          <Link to="/app">
+          <Link to="/auth">
             <Button size="lg" className="bg-accent hover:bg-accent/90 text-white">
               Start Free Trial
             </Button>
