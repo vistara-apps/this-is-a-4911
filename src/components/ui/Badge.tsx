@@ -1,13 +1,13 @@
-import React from 'react'
 import { Trophy } from 'lucide-react'
 
 interface BadgeProps {
   variant: 'bronze' | 'silver' | 'gold'
   size?: 'sm' | 'md' | 'lg'
   showIcon?: boolean
+  children?: React.ReactNode
 }
 
-export default function Badge({ variant, size = 'md', showIcon = true }: BadgeProps) {
+export default function Badge({ variant, size = 'md', showIcon = true, children }: BadgeProps) {
   const variants = {
     bronze: 'bg-orange-100 text-orange-800 border-orange-200',
     silver: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -29,7 +29,7 @@ export default function Badge({ variant, size = 'md', showIcon = true }: BadgePr
   return (
     <span className={`inline-flex items-center rounded-full border font-medium ${variants[variant]} ${sizes[size]}`}>
       {showIcon && <Trophy className={`mr-1 ${iconSizes[size]}`} />}
-      {variant.charAt(0).toUpperCase() + variant.slice(1)}
+      {children || (variant.charAt(0).toUpperCase() + variant.slice(1))}
     </span>
   )
 }

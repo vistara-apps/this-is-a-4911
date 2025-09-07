@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import { getCurrentUser, onAuthStateChange } from '../lib/auth'
+import { getPolicies, getPolicyModules, getUserQuizAttempts, getUserBadges } from '../lib/api'
 
 // Types
 export interface User {
@@ -53,13 +55,19 @@ interface AppState {
   attempts: QuizAttempt[]
   userBadges: string[]
   totalPoints: number
+  isLoading: boolean
 }
 
 type AppAction = 
-  | { type: 'SET_USER'; payload: User }
+  | { type: 'SET_USER'; payload: User | null }
+  | { type: 'SET_MODULES'; payload: PolicyModule[] }
+  | { type: 'SET_POLICIES'; payload: Policy[] }
+  | { type: 'SET_ATTEMPTS'; payload: QuizAttempt[] }
+  | { type: 'SET_BADGES'; payload: string[] }
   | { type: 'COMPLETE_QUIZ'; payload: QuizAttempt }
   | { type: 'ADD_BADGE'; payload: string }
   | { type: 'UPDATE_POINTS'; payload: number }
+  | { type: 'SET_LOADING'; payload: boolean }
 
 const initialState: AppState = {
   user: null,
@@ -67,7 +75,8 @@ const initialState: AppState = {
   policies: [],
   attempts: [],
   userBadges: [],
-  totalPoints: 0
+  totalPoints: 0,
+  isLoading: true
 }
 
 // Mock data
@@ -181,19 +190,22 @@ const mockPolicies: Policy[] = [
   }
 ]
 
-const mockUser: User = {
-  userId: 'user-1',
-  companyId: 'comp-1',
-  email: 'john.doe@company.com',
-  name: 'John Doe',
-  role: 'employee',
-  onboardingProgress: 33
-}
+
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_USER':
-      return { ...state, user: action.payload }
+      return { ...state, user: action.payload, isLoading: false }
+    case 'SET_MODULES':
+      return { ...state, modules: action.payload }
+    case 'SET_POLICIES':
+      return { ...state, policies: action.payload }
+    case 'SET_ATTEMPTS':
+      return { ...state, attempts: action.payload }
+    case 'SET_BADGES':
+      return { ...state, userBadges: action.payload }
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload }
     case 'COMPLETE_QUIZ':
       const newAttempt = action.payload
       const newBadges = [...state.userBadges]
@@ -235,15 +247,93 @@ const AppContext = createContext<{
 } | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, {
-    ...initialState,
-    modules: mockModules,
-    policies: mockPolicies
-  })
+  const [state, dispatch] = useReducer(appReducer, initialState)
 
   useEffect(() => {
-    // Initialize with mock user
-    dispatch({ type: 'SET_USER', payload: mockUser })
+    // Initialize authentication and data
+    const initializeApp = async () => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true })
+        
+        // Check for authenticated user
+        const authUser = await getCurrentUser()
+        const user = authUser ? {
+          userId: authUser.id,
+          companyId: authUser.companyId,
+          email: authUser.email,
+          name: authUser.name,
+          role: authUser.role,
+          onboardingProgress: authUser.onboardingProgress
+        } : null
+        dispatch({ type: 'SET_USER', payload: user })
+
+        // Load policies and modules (public data)
+        const [policies, modules] = await Promise.all([
+          getPolicies(),
+          getPolicyModules()
+        ])
+        
+        dispatch({ type: 'SET_POLICIES', payload: policies })
+        dispatch({ type: 'SET_MODULES', payload: modules })
+
+        // Load user-specific data if authenticated
+        if (user) {
+          const [attempts, badges] = await Promise.all([
+            getUserQuizAttempts(user.userId),
+            getUserBadges(user.userId)
+          ])
+          
+          dispatch({ type: 'SET_ATTEMPTS', payload: attempts })
+          dispatch({ type: 'SET_BADGES', payload: badges })
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error)
+        // Fallback to mock data if API fails
+        dispatch({ type: 'SET_MODULES', payload: mockModules })
+        dispatch({ type: 'SET_POLICIES', payload: mockPolicies })
+        dispatch({ type: 'SET_USER', payload: null })
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
+    }
+
+    initializeApp()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = onAuthStateChange(async (authUser) => {
+      const user = authUser ? {
+        userId: authUser.id,
+        companyId: authUser.companyId,
+        email: authUser.email,
+        name: authUser.name,
+        role: authUser.role,
+        onboardingProgress: authUser.onboardingProgress
+      } : null
+      dispatch({ type: 'SET_USER', payload: user })
+      
+      if (authUser) {
+        // Load user-specific data
+        try {
+          const [attempts, badges] = await Promise.all([
+            getUserQuizAttempts(authUser.id),
+            getUserBadges(authUser.id)
+          ])
+          
+          dispatch({ type: 'SET_ATTEMPTS', payload: attempts })
+          dispatch({ type: 'SET_BADGES', payload: badges })
+        } catch (error) {
+          console.error('Error loading user data:', error)
+        }
+      } else {
+        // Clear user-specific data
+        dispatch({ type: 'SET_ATTEMPTS', payload: [] })
+        dispatch({ type: 'SET_BADGES', payload: [] })
+      }
+    })
+
+    return () => {
+      subscription?.unsubscribe()
+    }
   }, [])
 
   return (

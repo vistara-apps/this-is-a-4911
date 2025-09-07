@@ -1,17 +1,18 @@
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Home, 
-  BookOpen, 
   FileText, 
   BarChart3, 
   Menu, 
   X, 
   User,
-  Trophy,
-  Star
+  Star,
+  Settings,
+  LogOut
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { signOut } from '../lib/auth'
 import Button from './ui/Button'
 import Badge from './ui/Badge'
 
@@ -21,17 +22,55 @@ export default function AppShell() {
   const navigate = useNavigate()
   const { state } = useApp()
 
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!state.isLoading && !state.user) {
+      navigate('/auth')
+    }
+  }, [state.isLoading, state.user, navigate])
+
   const navigation = [
     { name: 'Dashboard', href: '/app', icon: Home },
     { name: 'Policies', href: '/app/policies', icon: FileText },
     { name: 'Progress', href: '/app/progress', icon: BarChart3 },
   ]
 
+  // Add admin navigation for admin users
+  if (state.user?.role === 'admin') {
+    navigation.splice(1, 0, { name: 'Admin', href: '/app/admin', icon: Settings })
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      navigate('/auth')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
   const isActive = (href: string) => {
     if (href === '/app') {
       return location.pathname === '/app'
     }
     return location.pathname.startsWith(href)
+  }
+
+  // Show loading state
+  if (state.isLoading) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if no user (will redirect)
+  if (!state.user) {
+    return null
   }
 
   return (
@@ -126,6 +165,19 @@ export default function AppShell() {
                   <Badge key={badge} variant={badge as any} size="sm" />
                 ))}
               </div>
+            </div>
+            
+            {/* Sign out button */}
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="w-full text-xs"
+              >
+                <LogOut className="w-3 h-3 mr-1" />
+                Sign Out
+              </Button>
             </div>
           </div>
         )}

@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { Trophy, Star, CheckCircle, Clock, TrendingUp } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Card from '../components/ui/Card'
