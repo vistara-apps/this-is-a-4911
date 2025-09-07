@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { useNavigate } from 'react-router-dom'
 import { Play, Star, Trophy, CheckCircle, Clock } from 'lucide-react'
 import { useApp } from '../context/AppContext'

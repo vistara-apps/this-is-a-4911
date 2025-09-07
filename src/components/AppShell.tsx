@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Home, 
-  BookOpen, 
   FileText, 
   BarChart3, 
   Menu, 
   X, 
   User,
-  Trophy,
   Star,
   Settings,
   LogOut

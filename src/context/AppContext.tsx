@@ -190,14 +190,7 @@ const mockPolicies: Policy[] = [
   }
 ]
 
-const mockUser: User = {
-  userId: 'user-1',
-  companyId: 'comp-1',
-  email: 'john.doe@company.com',
-  name: 'John Doe',
-  role: 'employee',
-  onboardingProgress: 33
-}
+
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
@@ -308,7 +301,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth state changes
     const { data: { subscription } } = onAuthStateChange(async (authUser) => {
-      // Transform AuthUser to User format
       const user = authUser ? {
         userId: authUser.id,
         companyId: authUser.companyId,
@@ -317,7 +309,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         role: authUser.role,
         onboardingProgress: authUser.onboardingProgress
       } : null
-      
       dispatch({ type: 'SET_USER', payload: user })
       
       if (authUser) {
