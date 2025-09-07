@@ -263,7 +263,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_LOADING', payload: true })
         
         // Check for authenticated user
-        const user = await getCurrentUser()
+        const authUser = await getCurrentUser()
+        const user = authUser ? {
+          userId: authUser.id,
+          companyId: authUser.companyId,
+          email: authUser.email,
+          name: authUser.name,
+          role: authUser.role,
+          onboardingProgress: authUser.onboardingProgress
+        } : null
         dispatch({ type: 'SET_USER', payload: user })
 
         // Load policies and modules (public data)
