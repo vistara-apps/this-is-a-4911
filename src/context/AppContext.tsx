@@ -307,15 +307,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     initializeApp()
 
     // Listen for auth state changes
-    const { data: { subscription } } = onAuthStateChange(async (user) => {
+    const { data: { subscription } } = onAuthStateChange(async (authUser) => {
+      // Transform AuthUser to User format
+      const user = authUser ? {
+        userId: authUser.id,
+        companyId: authUser.companyId,
+        email: authUser.email,
+        name: authUser.name,
+        role: authUser.role,
+        onboardingProgress: authUser.onboardingProgress
+      } : null
+      
       dispatch({ type: 'SET_USER', payload: user })
       
-      if (user) {
+      if (authUser) {
         // Load user-specific data
         try {
           const [attempts, badges] = await Promise.all([
-            getUserQuizAttempts(user.id),
-            getUserBadges(user.id)
+            getUserQuizAttempts(authUser.id),
+            getUserBadges(authUser.id)
           ])
           
           dispatch({ type: 'SET_ATTEMPTS', payload: attempts })
